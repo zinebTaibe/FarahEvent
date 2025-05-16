@@ -1,5 +1,24 @@
 <?php
-include('../dashboard.html'); // Changé en .php pour correspondre au commentaire
+// Database connection and dashboard inclusion
+require_once '../../conn.php';
+if (!$pdo) {
+    die("Erreur de connexion à la base de données");
+}
+include('../dashboard.html');
+
+// Handle status update if POST request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_status'])) {
+    $reviewId = $_POST['review_id'];
+    $newStatus = $_POST['new_status'];
+    
+    try {
+        $stmt = $pdo->prepare("UPDATE avis SET statut = :status WHERE id = :id");
+        $stmt->execute([':status' => $newStatus, ':id' => $reviewId]);
+        $updateSuccess = true;
+    } catch (PDOException $e) {
+        $updateError = $e->getMessage();
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -7,118 +26,365 @@ include('../dashboard.html'); // Changé en .php pour correspondre au commentair
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Interface d'administration pour la gestion des avis clients">
     <title>Admin - Gestion des Avis Clients</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/FarahEvent/Admin/Avis/style.css">
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        
+        .admin-container {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .main-content {
+            flex: 1;
+            padding: 20px;
+        }
+        
+        .header {
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Table styles */
+        .reviews-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .search-input {
+            padding: 8px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+        }
+        
+        .reviews-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .reviews-table th, .reviews-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .reviews-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        /* Status styles */
+        .status-select {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            min-width: 100px;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .status-pending {
+            background-color: #FFF3CD;
+            color: #856404;
+        }
+        
+        .status-approved {
+            background-color: #D4EDDA;
+            color: #155724;
+        }
+        
+        .status-rejected {
+            background-color: #F8D7DA;
+            color: #721C24;
+        }
+        
+        /* Action buttons */
+        .action-btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+            font-size: 0.9em;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .view-btn {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 50%;
+            max-width: 600px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #777;
+        }
+        
+        .review-detail {
+            margin-bottom: 15px;
+        }
+        
+        .review-detail label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        
+        .full-review-content {
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+        
+        .modal-footer {
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+            margin-top: 15px;
+            text-align: right;
+        }
+        
+        .cancel-btn, .confirm-delete-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .cancel-btn {
+            background-color: #6c757d;
+            color: white;
+            margin-right: 10px;
+        }
+        
+        .confirm-delete-btn {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 5px;
+        }
+        
+        .pagination a {
+            padding: 8px 12px;
+            text-decoration: none;
+            border: 1px solid #ddd;
+            color: #007bff;
+            border-radius: 4px;
+        }
+        
+        .pagination a.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 4px;
+            color: white;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s, fadeOut 0.5s 2.5s forwards;
+        }
+        
+        .notification.success {
+            background-color: #28a745;
+        }
+        
+        .notification.error {
+            background-color: #dc3545;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+    </style>
 </head>
 <body>
     <div class="admin-container">
-        <!-- Le sidebar est déjà inclus via dashboard.php -->
-        
-        <!-- Main Content Area -->
         <div class="main-content">
             <div class="header">
                 <h1><i class="fas fa-star"></i> Gérer les avis clients</h1>
+                <?php if (isset($updateSuccess)): ?>
+                    <div class="notification success">
+                        <i class="fas fa-check-circle"></i> Statut mis à jour avec succès
+                    </div>
+                <?php elseif (isset($updateError)): ?>
+                    <div class="notification error">
+                        <i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($updateError) ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
-            <!-- Reviews Table -->
             <div class="reviews-container">
                 <div class="table-header">
                     <h2>Liste des avis clients</h2>
                     <div class="table-actions">
                         <input type="text" class="search-input" placeholder="Rechercher un avis..." aria-label="Recherche">
-                        <button class="filter-btn" title="Filtrer les résultats"><i class="fas fa-filter"></i> Filtrer</button>
                     </div>
                 </div>
                 
                 <div class="table-responsive">
-                    <table class="reviews-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">ID</th>
-                                <th scope="col">Client</th>
-                                <th scope="col">Commentaire</th>
-                                <th scope="col">Note</th>
-                                <th scope="col">Date</th>
-                                <th scope="col">Statut</th>
-                                <th scope="col">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="review-id">Avis #1001</td>
-                                <td>Marie Dupont</td>
-                                <td class="review-content">Service exceptionnel, je recommande vivement ce salon de beauté...</td>
-                                <td><span class="star-rating" aria-label="5 étoiles sur 5">★★★★★</span></td>
-                                <td>15/06/2023</td>
-                                <td><span class="status-badge published">Publié</span></td>
-                                <td>
-                                    <div class="review-actions">
-                                        <button class="action-btn view-btn" title="Voir l'avis complet" onclick="openViewModal('Avis #1001', 'Marie Dupont', 'Service exceptionnel, je recommande vivement ce salon de beauté. Le personnel est très accueillant et professionnel. J\'ai été particulièrement impressionnée par la qualité du service et l\'attention portée aux détails. Je reviendrai certainement pour d\'autres prestations.', '★★★★★', '15/06/2023', 'Publié')"><i class="fas fa-eye"></i> Voir</button>
-                                        <button class="action-btn delete-btn" title="Supprimer l'avis" onclick="openDeleteModal('Avis #1001', 'Marie Dupont')"><i class="fas fa-trash"></i> Supprimer</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Autres lignes de tableau inchangées... -->
-                            <tr>
-                                <td class="review-id">Avis #1002</td>
-                                <td>Jean Martin</td>
-                                <td class="review-content">Personnel très professionnel, résultat impeccable...</td>
-                                <td><span class="star-rating" aria-label="4 étoiles sur 5">★★★★☆</span></td>
-                                <td>12/06/2023</td>
-                                <td><span class="status-badge published">Publié</span></td>
-                                <td>
-                                    <div class="review-actions">
-                                        <button class="action-btn view-btn" title="Voir l'avis complet" onclick="openViewModal('Avis #1002', 'Jean Martin', 'Personnel très professionnel, résultat impeccable. J\'ai été très satisfait de la coupe de cheveux et du temps accordé pour discuter de mes besoins. L\'ambiance du salon est très agréable et relaxante. Seul petit bémol : le prix un peu élevé par rapport à la concurrence, mais la qualité est au rendez-vous.', '★★★★☆', '12/06/2023', 'Publié')"><i class="fas fa-eye"></i> Voir</button>
-                                        <button class="action-btn delete-btn" title="Supprimer l'avis" onclick="openDeleteModal('Avis #1002', 'Jean Martin')"><i class="fas fa-trash"></i> Supprimer</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="review-id">Avis #1003</td>
-                                <td>Sophie Leroy</td>
-                                <td class="review-content">Un peu déçue par le service, le résultat ne correspondait pas à mes attentes...</td>
-                                <td><span class="star-rating" aria-label="2 étoiles sur 5">★★☆☆☆</span></td>
-                                <td>10/06/2023</td>
-                                <td><span class="status-badge pending">En attente</span></td>
-                                <td>
-                                    <div class="review-actions">
-                                        <button class="action-btn view-btn" title="Voir l'avis complet" onclick="openViewModal('Avis #1003', 'Sophie Leroy', 'Un peu déçue par le service, le résultat ne correspondait pas à mes attentes. J\'avais demandé une coloration spécifique et le résultat final était bien différent de ce que j\'avais imaginé. Le personnel a été sympathique et a proposé de rectifier le problème, mais j\'ai dû revenir une deuxième fois ce qui n\'était pas prévu. Je donne une deuxième chance car l\'attitude était professionnelle.', '★★☆☆☆', '10/06/2023', 'En attente')"><i class="fas fa-eye"></i> Voir</button>
-                                        <button class="action-btn delete-btn" title="Supprimer l'avis" onclick="openDeleteModal('Avis #1003', 'Sophie Leroy')"><i class="fas fa-trash"></i> Supprimer</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="review-id">Avis #1004</td>
-                                <td>Thomas Bernard</td>
-                                <td class="review-content">Très bon rapport qualité-prix, je reviendrai...</td>
-                                <td><span class="star-rating" aria-label="4 étoiles sur 5">★★★★☆</span></td>
-                                <td>08/06/2023</td>
-                                <td><span class="status-badge published">Publié</span></td>
-                                <td>
-                                    <div class="review-actions">
-                                        <button class="action-btn view-btn" title="Voir l'avis complet" onclick="openViewModal('Avis #1004', 'Thomas Bernard', 'Très bon rapport qualité-prix, je reviendrai. Pour le prix payé, je ne m\'attendais pas à un service aussi complet. La styliste a pris le temps de bien comprendre ce que je voulais et le résultat était parfait. L\'endroit est propre et bien entretenu. La seule raison pour laquelle je ne donne pas 5 étoiles est l\'attente un peu longue sans rendez-vous.', '★★★★☆', '08/06/2023', 'Publié')"><i class="fas fa-eye"></i> Voir</button>
-                                        <button class="action-btn delete-btn" title="Supprimer l'avis" onclick="openDeleteModal('Avis #1004', 'Thomas Bernard')"><i class="fas fa-trash"></i> Supprimer</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="review-id">Avis #1005</td>
-                                <td>Laura Petit</td>
-                                <td class="review-content">Contenu inapproprié...</td>
-                                <td><span class="star-rating" aria-label="1 étoile sur 5">★☆☆☆☆</span></td>
-                                <td>05/06/2023</td>
-                                <td><span class="status-badge rejected">Rejeté</span></td>
-                                <td>
-                                    <div class="review-actions">
-                                        <button class="action-btn view-btn" title="Voir l'avis complet" onclick="openViewModal('Avis #1005', 'Laura Petit', 'Contenu inapproprié: Ce salon est une arnaque totale! Les employés sont incompétents et malpolis. Je ne recommanderais à personne de mettre les pieds dans cet endroit. Ils ont ruiné mes cheveux et ont refusé de reconnaître leur erreur. De plus, l\'hygiène laisse à désirer. À éviter à tout prix!', '★☆☆☆☆', '05/06/2023', 'Rejeté')"><i class="fas fa-eye"></i> Voir</button>
-                                        <button class="action-btn delete-btn" title="Supprimer l'avis" onclick="openDeleteModal('Avis #1005', 'Laura Petit')"><i class="fas fa-trash"></i> Supprimer</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <form method="post" id="statusForm">
+                        <table class="reviews-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">ID</th>
+                                    <th scope="col">Client</th>
+                                    <th scope="col">Commentaire</th>
+                                    <th scope="col">Note</th>
+                                    <th scope="col">Date</th>
+                                    <th scope="col">Statut</th>
+                                    <th scope="col">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php
+                            try {
+                                $query = "SELECT a.*, c.nom as client_name FROM avis a LEFT JOIN client c ON a.Client_id = c.id ORDER BY a.created_at DESC";
+                                $stmt = $pdo->prepare($query);
+                                $stmt->execute();
+                                $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                
+                                foreach ($data as $row) {
+                                    $id = htmlspecialchars($row['id']);
+                                    $comment = htmlspecialchars($row['commentaire']);
+                                    $note = htmlspecialchars($row['note']);
+                                    $clientName = htmlspecialchars($row['client_name'] ?? 'Client inconnu');
+                                    $dateCreation = htmlspecialchars($row['created_at']);
+                                    $status = htmlspecialchars($row['statut']);
+                                    ?>
+                                    <tr>
+                                        <td class='review-id'><?= $id ?></td>
+                                        <td><?= $clientName ?></td>
+                                        <td class='review-content'><?= mb_strimwidth($comment, 0, 50, '...') ?></td>
+                                        <td><span class='star-rating'><?= $note ?></span></td>
+                                        <td><?= $dateCreation ?></td>
+                                        <td>
+                                            <select class="status-select" name="status[<?= $id ?>]" onchange="updateStatus(this, <?= $id ?>)">
+                                                <option value="en_attente" <?= $status == 'en_attente' ? 'selected' : '' ?>>En attente</option>
+                                                <option value="validé" <?= $status == 'validé' ? 'selected' : '' ?>>Validé</option>
+                                                <option value="rejeté" <?= $status == 'rejeté' ? 'selected' : '' ?>>Rejeté</option>
+                                            </select>
+                                            <span class="status-badge status-<?= str_replace('é', 'e', strtolower($status)) ?>" style="display: none;">
+                                                <?= ucfirst($status) ?>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class='review-actions'>
+                                                <button type="button" class='action-btn view-btn' title='Voir l avis complet' 
+                                                    onclick='openViewModal(<?= $id ?>, "<?= $clientName ?>", "<?= addslashes($comment) ?>", <?= $note ?>, "<?= $dateCreation ?>", "<?= $status ?>")'>
+                                                    <i class='fas fa-eye'></i> Voir
+                                                </button>
+                                                <button type="button" class='action-btn delete-btn' title='Supprimer l avis' 
+                                                    onclick='openDeleteModal(<?= $id ?>, "<?= $clientName ?>")'>
+                                                    <i class='fas fa-trash'></i> Supprimer
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php }
+                            } catch (PDOException $e) {
+                                echo "<tr><td colspan='7'>Erreur de base de données: " . $e->getMessage() . "</td></tr>";
+                            }
+                            ?>
+                            </tbody>
+                        </table>
+                        <input type="hidden" name="update_status" value="1">
+                    </form>
                 </div>
             </div>
 
@@ -165,7 +431,7 @@ include('../dashboard.html'); // Changé en .php pour correspondre au commentair
                 </div>
                 <div class="review-detail">
                     <label for="view-review-status">Statut</label>
-                    <p id="view-review-status"></p>
+                    <p id="view-review-status" class="status-badge"></p>
                 </div>
             </div>
             <div class="modal-footer">
@@ -193,63 +459,134 @@ include('../dashboard.html'); // Changé en .php pour correspondre au commentair
     </div>
 
     <script>
-        // Function to open view modal
-        function openViewModal(id, client, content, rating, date, status) {
-            document.getElementById('view-review-id').textContent = id;
-            document.getElementById('view-client-name').textContent = client;
-            document.getElementById('view-review-content').textContent = content;
-            document.getElementById('view-review-rating').innerHTML = '<span class="star-rating">' + rating + '</span>';
-            document.getElementById('view-review-date').textContent = date;
+        // Open View Modal and set the details
+        function openViewModal(id, clientName, comment, rating, date, status) {
+            document.getElementById('view-review-id').innerText = id;
+            document.getElementById('view-client-name').innerText = clientName;
+            document.getElementById('view-review-content').innerText = comment;
+            document.getElementById('view-review-rating').innerText = rating;
+            document.getElementById('view-review-date').innerText = date;
             
-            // Set status with appropriate badge class
             const statusElement = document.getElementById('view-review-status');
-            statusElement.innerHTML = '';
-            const badge = document.createElement('span');
-            badge.className = 'status-badge ' + (status === 'Publié' ? 'published' : status === 'En attente' ? 'pending' : 'rejected');
-            badge.textContent = status;
-            statusElement.appendChild(badge);
+            statusElement.innerText = status.charAt(0).toUpperCase() + status.slice(1);
+            statusElement.className = 'status-badge status-' + status.toLowerCase().replace('é', 'e');
             
-            document.getElementById('viewModal').style.display = 'flex';
+            document.getElementById('viewModal').style.display = 'block';
         }
 
-        // Function to open delete modal
-        function openDeleteModal(id, client) {
-            document.getElementById('delete-review-id').textContent = id;
-            document.getElementById('delete-client-name').textContent = client;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
-
-        // Function to close modal
+        // Close the modal
         function closeModal(modalId) {
             document.getElementById(modalId).style.display = 'none';
         }
 
-        // Function to confirm delete
-        function confirmDelete() {
-            // Here you would typically make an AJAX call to delete the review from the database
-            alert('L\'avis a été supprimé avec succès !');
-            closeModal('deleteModal');
+        // Show the delete confirmation modal
+        function openDeleteModal(reviewId, clientName) {
+            document.getElementById('delete-review-id').innerText = reviewId;
+            document.getElementById('delete-client-name').innerText = clientName;
+            document.getElementById('deleteModal').style.display = 'block';
+        }
+
+        // Update status via AJAX
+        function updateStatus(selectElement, reviewId) {
+            const newStatus = selectElement.value;
+            const formData = new FormData();
+            formData.append('review_id', reviewId);
+            formData.append('new_status', newStatus);
+            formData.append('update_status', '1');
             
-            // In a real application, you would refresh the table or remove the row from the DOM
-            // For this demo, we'll just show an alert
-        }
-
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            if (event.target.className === 'modal') {
-                event.target.style.display = 'none';
-            }
-        }
-
-        // Amélioration: fermeture des modales avec la touche Escape
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                document.querySelectorAll('.modal').forEach(function(modal) {
-                    if (modal.style.display === 'flex') {
-                        modal.style.display = 'none';
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Show success notification
+                    const notification = document.createElement('div');
+                    notification.className = 'notification success';
+                    notification.innerHTML = '<i class="fas fa-check-circle"></i> Statut mis à jour avec succès';
+                    document.querySelector('.header').appendChild(notification);
+                    
+                    // Remove notification after 3 seconds
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 3000);
+                    
+                    // Update the status badge in the view modal if open
+                    const viewModalStatus = document.getElementById('view-review-status');
+                    if (viewModalStatus && viewModalStatus.textContent === selectElement.options[selectElement.selectedIndex].text) {
+                        viewModalStatus.textContent = selectElement.options[selectElement.selectedIndex].text;
+                        viewModalStatus.className = 'status-badge status-' + newStatus.toLowerCase().replace('é', 'e');
                     }
+                } else {
+                    throw new Error('Erreur lors de la mise à jour');
+                }
+            })
+            .catch(error => {
+                // Show error notification
+                const notification = document.createElement('div');
+                notification.className = 'notification error';
+                notification.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + error.message;
+                document.querySelector('.header').appendChild(notification);
+                
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 3000);
+                
+                // Revert to previous value
+                selectElement.value = selectElement.getAttribute('data-previous-value');
+            });
+        }
+
+        // Confirm the deletion of the review
+        function confirmDelete() {
+            const reviewId = document.getElementById('delete-review-id').textContent;
+            
+            fetch('delete.php?id=' + reviewId)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Erreur réseau');
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    console.log('Avis supprimé:', data);
+                    closeModal('deleteModal');
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de la suppression');
                 });
-            }
+        }
+
+        // Search functionality
+        document.querySelector('.search-input').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('.reviews-table tbody tr');
+
+            rows.forEach(row => {
+                const id = row.querySelector('.review-id')?.textContent.toLowerCase() || '';
+                const clientName = row.querySelector('td:nth-child(2)')?.textContent.toLowerCase() || '';
+                const comment = row.querySelector('.review-content')?.textContent.toLowerCase() || '';
+                const date = row.querySelector('td:nth-child(5)')?.textContent.toLowerCase() || '';
+                const status = row.querySelector('.status-select')?.value.toLowerCase() || '';
+
+                if (id.includes(searchTerm) || clientName.includes(searchTerm) || 
+                    comment.includes(searchTerm) || date.includes(searchTerm) || 
+                    status.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Store previous status value on focus
+        document.querySelectorAll('.status-select').forEach(select => {
+            select.addEventListener('focus', function() {
+                this.setAttribute('data-previous-value', this.value);
+            });
         });
     </script>
 </body>
