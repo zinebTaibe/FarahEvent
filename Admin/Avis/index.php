@@ -1,256 +1,474 @@
-<?php
-include('../dashboard.html'); // Changé en .php pour correspondre au commentaire
-?>
+/* Style CSS adapté pour la page des avis clients */
+:root {
+    --primary-color: #3498db;
+    --primary-dark: #2980b9;
+    --secondary-color: #2c3e50;
+    --secondary-dark: #34495e;
+    --success-color: #1abc9c;
+    --warning-color: #f39c12;
+    --danger-color: #e74c3c;
+    --danger-dark: #c0392b;
+    --light-bg: #f5f5f5;
+    --white: #ffffff;
+    --border-color: #ddd;
+    --text-color: #333;
+    --text-light: #7f8c8d;
+    --shadow: 0 2px 10px rgba(0,0,0,0.05);
+    --transition: all 0.3s ease;
+    --sidebar-width: 280px;
+    --sidebar-width-tablet: 220px;
+    --sidebar-width-mobile: 70px;
+}
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Interface d'administration pour la gestion des avis clients">
-    <title>Admin - Gestion des Avis Clients</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/FarahEvent/Admin/Avis/style.css">
-</head>
-<body>
-    <div class="admin-container">
-        <!-- Le sidebar est déjà inclus via dashboard.php -->
-        
-        <!-- Main Content Area -->
-        <div class="main-content">
-            <div class="header">
-                <h1><i class="fas fa-star"></i> Gérer les avis clients</h1>
-            </div>
+/* Main Content Styles - Adapté pour fonctionner avec le dashboard importé */
+.main-content {
+    flex: 1;
+    margin-left: var(--sidebar-width); /* Utilise la variable pour la largeur de la sidebar */
+    padding: 30px;
+    background-color: var(--light-bg);
+    transition: var(--transition);
+}
 
-            <!-- Reviews Table -->
-            <div class="reviews-container">
-                <div class="table-header">
-                    <h2>Liste des avis clients</h2>
-                    <div class="table-actions">
-                        <input type="text" class="search-input" placeholder="Rechercher un avis..." aria-label="Recherche">
-                        <button class="filter-btn" title="Filtrer les résultats"><i class="fas fa-filter"></i> Filtrer</button>
-                    </div>
-                </div>
-                
-                <div class="table-responsive">
-                    <table class="reviews-table">
-                        <thead>
-                            <tr>
-                                <th scope="col">ID</th>
-                                <th scope="col">Client</th>
-                                <th scope="col">Commentaire</th>
-                                <th scope="col">Note</th>
-                                <th scope="col">Date</th>
-                                <th scope="col">Statut</th>
-                                <th scope="col">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="review-id">Avis #1001</td>
-                                <td>Marie Dupont</td>
-                                <td class="review-content">Service exceptionnel, je recommande vivement ce salon de beauté...</td>
-                                <td><span class="star-rating" aria-label="5 étoiles sur 5">★★★★★</span></td>
-                                <td>15/06/2023</td>
-                                <td><span class="status-badge published">Publié</span></td>
-                                <td>
-                                    <div class="review-actions">
-                                        <button class="action-btn view-btn" title="Voir l'avis complet" onclick="openViewModal('Avis #1001', 'Marie Dupont', 'Service exceptionnel, je recommande vivement ce salon de beauté. Le personnel est très accueillant et professionnel. J\'ai été particulièrement impressionnée par la qualité du service et l\'attention portée aux détails. Je reviendrai certainement pour d\'autres prestations.', '★★★★★', '15/06/2023', 'Publié')"><i class="fas fa-eye"></i> Voir</button>
-                                        <button class="action-btn delete-btn" title="Supprimer l'avis" onclick="openDeleteModal('Avis #1001', 'Marie Dupont')"><i class="fas fa-trash"></i> Supprimer</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <!-- Autres lignes de tableau inchangées... -->
-                            <tr>
-                                <td class="review-id">Avis #1002</td>
-                                <td>Jean Martin</td>
-                                <td class="review-content">Personnel très professionnel, résultat impeccable...</td>
-                                <td><span class="star-rating" aria-label="4 étoiles sur 5">★★★★☆</span></td>
-                                <td>12/06/2023</td>
-                                <td><span class="status-badge published">Publié</span></td>
-                                <td>
-                                    <div class="review-actions">
-                                        <button class="action-btn view-btn" title="Voir l'avis complet" onclick="openViewModal('Avis #1002', 'Jean Martin', 'Personnel très professionnel, résultat impeccable. J\'ai été très satisfait de la coupe de cheveux et du temps accordé pour discuter de mes besoins. L\'ambiance du salon est très agréable et relaxante. Seul petit bémol : le prix un peu élevé par rapport à la concurrence, mais la qualité est au rendez-vous.', '★★★★☆', '12/06/2023', 'Publié')"><i class="fas fa-eye"></i> Voir</button>
-                                        <button class="action-btn delete-btn" title="Supprimer l'avis" onclick="openDeleteModal('Avis #1002', 'Jean Martin')"><i class="fas fa-trash"></i> Supprimer</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="review-id">Avis #1003</td>
-                                <td>Sophie Leroy</td>
-                                <td class="review-content">Un peu déçue par le service, le résultat ne correspondait pas à mes attentes...</td>
-                                <td><span class="star-rating" aria-label="2 étoiles sur 5">★★☆☆☆</span></td>
-                                <td>10/06/2023</td>
-                                <td><span class="status-badge pending">En attente</span></td>
-                                <td>
-                                    <div class="review-actions">
-                                        <button class="action-btn view-btn" title="Voir l'avis complet" onclick="openViewModal('Avis #1003', 'Sophie Leroy', 'Un peu déçue par le service, le résultat ne correspondait pas à mes attentes. J\'avais demandé une coloration spécifique et le résultat final était bien différent de ce que j\'avais imaginé. Le personnel a été sympathique et a proposé de rectifier le problème, mais j\'ai dû revenir une deuxième fois ce qui n\'était pas prévu. Je donne une deuxième chance car l\'attitude était professionnelle.', '★★☆☆☆', '10/06/2023', 'En attente')"><i class="fas fa-eye"></i> Voir</button>
-                                        <button class="action-btn delete-btn" title="Supprimer l'avis" onclick="openDeleteModal('Avis #1003', 'Sophie Leroy')"><i class="fas fa-trash"></i> Supprimer</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="review-id">Avis #1004</td>
-                                <td>Thomas Bernard</td>
-                                <td class="review-content">Très bon rapport qualité-prix, je reviendrai...</td>
-                                <td><span class="star-rating" aria-label="4 étoiles sur 5">★★★★☆</span></td>
-                                <td>08/06/2023</td>
-                                <td><span class="status-badge published">Publié</span></td>
-                                <td>
-                                    <div class="review-actions">
-                                        <button class="action-btn view-btn" title="Voir l'avis complet" onclick="openViewModal('Avis #1004', 'Thomas Bernard', 'Très bon rapport qualité-prix, je reviendrai. Pour le prix payé, je ne m\'attendais pas à un service aussi complet. La styliste a pris le temps de bien comprendre ce que je voulais et le résultat était parfait. L\'endroit est propre et bien entretenu. La seule raison pour laquelle je ne donne pas 5 étoiles est l\'attente un peu longue sans rendez-vous.', '★★★★☆', '08/06/2023', 'Publié')"><i class="fas fa-eye"></i> Voir</button>
-                                        <button class="action-btn delete-btn" title="Supprimer l'avis" onclick="openDeleteModal('Avis #1004', 'Thomas Bernard')"><i class="fas fa-trash"></i> Supprimer</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="review-id">Avis #1005</td>
-                                <td>Laura Petit</td>
-                                <td class="review-content">Contenu inapproprié...</td>
-                                <td><span class="star-rating" aria-label="1 étoile sur 5">★☆☆☆☆</span></td>
-                                <td>05/06/2023</td>
-                                <td><span class="status-badge rejected">Rejeté</span></td>
-                                <td>
-                                    <div class="review-actions">
-                                        <button class="action-btn view-btn" title="Voir l'avis complet" onclick="openViewModal('Avis #1005', 'Laura Petit', 'Contenu inapproprié: Ce salon est une arnaque totale! Les employés sont incompétents et malpolis. Je ne recommanderais à personne de mettre les pieds dans cet endroit. Ils ont ruiné mes cheveux et ont refusé de reconnaître leur erreur. De plus, l\'hygiène laisse à désirer. À éviter à tout prix!', '★☆☆☆☆', '05/06/2023', 'Rejeté')"><i class="fas fa-eye"></i> Voir</button>
-                                        <button class="action-btn delete-btn" title="Supprimer l'avis" onclick="openDeleteModal('Avis #1005', 'Laura Petit')"><i class="fas fa-trash"></i> Supprimer</button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
 
-            <!-- Pagination -->
-            <nav aria-label="Navigation des pages">
-                <div class="pagination">
-                    <a href="#" aria-label="Page précédente">&laquo;</a>
-                    <a href="#" class="active" aria-current="page">1</a>
-                    <a href="#">2</a>
-                    <a href="#">3</a>
-                    <a href="#" aria-label="Page suivante">&raquo;</a>
-                </div>
-            </nav>
-        </div>
-    </div>
+.header h1 {
+    color: var(--secondary-color);
+    font-size: 24px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-    <!-- View Modal -->
-    <div id="viewModal" class="modal" role="dialog" aria-labelledby="modalTitle" aria-hidden="true">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Détails de l'avis</h3>
-                <button class="close-btn" onclick="closeModal('viewModal')" aria-label="Fermer">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="review-detail">
-                    <label for="view-review-id">ID de l'avis</label>
-                    <p id="view-review-id"></p>
-                </div>
-                <div class="review-detail">
-                    <label for="view-client-name">Client</label>
-                    <p id="view-client-name"></p>
-                </div>
-                <div class="review-detail">
-                    <label for="view-review-content">Commentaire complet</label>
-                    <p class="full-review-content" id="view-review-content"></p>
-                </div>
-                <div class="review-detail">
-                    <label for="view-review-rating">Note</label>
-                    <p id="view-review-rating"></p>
-                </div>
-                <div class="review-detail">
-                    <label for="view-review-date">Date</label>
-                    <p id="view-review-date"></p>
-                </div>
-                <div class="review-detail">
-                    <label for="view-review-status">Statut</label>
-                    <p id="view-review-status"></p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="cancel-btn" onclick="closeModal('viewModal')">Fermer</button>
-            </div>
-        </div>
-    </div>
+/* Reviews Table Styles */
+.reviews-container {
+    background-color: var(--white);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
 
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="modal" role="dialog" aria-labelledby="deleteModalTitle" aria-hidden="true">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="deleteModalTitle">Confirmer la suppression</h3>
-                <button class="close-btn" onclick="closeModal('deleteModal')" aria-label="Fermer">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Êtes-vous sûr de vouloir supprimer l'avis <strong id="delete-review-id"></strong> de <strong id="delete-client-name"></strong> ?</p>
-                <p>Cette action est irréversible.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="cancel-btn" onclick="closeModal('deleteModal')">Annuler</button>
-                <button class="confirm-delete-btn" onclick="confirmDelete()">Confirmer la suppression</button>
-            </div>
-        </div>
-    </div>
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
 
-    <script>
-        // Function to open view modal
-        function openViewModal(id, client, content, rating, date, status) {
-            document.getElementById('view-review-id').textContent = id;
-            document.getElementById('view-client-name').textContent = client;
-            document.getElementById('view-review-content').textContent = content;
-            document.getElementById('view-review-rating').innerHTML = '<span class="star-rating">' + rating + '</span>';
-            document.getElementById('view-review-date').textContent = date;
-            
-            // Set status with appropriate badge class
-            const statusElement = document.getElementById('view-review-status');
-            statusElement.innerHTML = '';
-            const badge = document.createElement('span');
-            badge.className = 'status-badge ' + (status === 'Publié' ? 'published' : status === 'En attente' ? 'pending' : 'rejected');
-            badge.textContent = status;
-            statusElement.appendChild(badge);
-            
-            document.getElementById('viewModal').style.display = 'flex';
-        }
+.table-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--secondary-color);
+    margin: 0;
+}
 
-        // Function to open delete modal
-        function openDeleteModal(id, client) {
-            document.getElementById('delete-review-id').textContent = id;
-            document.getElementById('delete-client-name').textContent = client;
-            document.getElementById('deleteModal').style.display = 'flex';
-        }
+.table-actions {
+    display: flex;
+    gap: 10px;
+}
 
-        // Function to close modal
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
+.search-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 14px;
+    width: 200px;
+    outline: none;
+    transition: var(--transition);
+}
 
-        // Function to confirm delete
-        function confirmDelete() {
-            // Here you would typically make an AJAX call to delete the review from the database
-            alert('L\'avis a été supprimé avec succès !');
-            closeModal('deleteModal');
-            
-            // In a real application, you would refresh the table or remove the row from the DOM
-            // For this demo, we'll just show an alert
-        }
+.search-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
 
-        // Close modal when clicking outside of it
-        window.onclick = function(event) {
-            if (event.target.className === 'modal') {
-                event.target.style.display = 'none';
-            }
-        }
+.filter-btn {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: var(--transition);
+}
 
-        // Amélioration: fermeture des modales avec la touche Escape
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                document.querySelectorAll('.modal').forEach(function(modal) {
-                    if (modal.style.display === 'flex') {
-                        modal.style.display = 'none';
-                    }
-                });
-            }
-        });
-    </script>
-</body>
-</html>
+.filter-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.reviews-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.reviews-table th,
+.reviews-table td {
+    padding: 15px 20px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.reviews-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.reviews-table tr:last-child td {
+    border-bottom: none;
+}
+
+.reviews-table tr:hover {
+    background-color: #f8f9fa;
+}
+
+.review-id {
+    color: var(--text-light);
+    font-weight: 500;
+}
+
+.review-content {
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.review-actions {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.view-btn {
+    background-color: var(--primary-color);
+    color: var(--white);
+}
+
+.view-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+.delete-btn {
+    background-color: var(--danger-color);
+    color: var(--white);
+}
+
+.delete-btn:hover {
+    background-color: var(--danger-dark);
+}
+
+/* Focus styles pour l'accessibilité */
+.action-btn:focus, 
+.filter-btn:focus,
+.close-btn:focus,
+.cancel-btn:focus,
+.confirm-delete-btn:focus,
+.pagination a:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-block;
+}
+
+.published {
+    background-color: #e8f8f5;
+    color: var(--success-color);
+}
+
+.pending {
+    background-color: #fef9e7;
+    color: var(--warning-color);
+}
+
+.rejected {
+    background-color: #fdedec;
+    color: var(--danger-color);
+}
+
+/* Star Rating */
+.star-rating {
+    color: #f1c40f;
+    letter-spacing: 2px;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.pagination a {
+    color: var(--primary-color);
+    padding: 8px 16px;
+    text-decoration: none;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    transition: var(--transition);
+    font-size: 14px;
+}
+
+.pagination a.active {
+    background-color: var(--primary-color);
+    color: var(--white);
+    border-color: var(--primary-color);
+}
+
+.pagination a:hover:not(.active) {
+    background-color: #f1f1f1;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: var(--white);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    font-size: 18px;
+    color: var(--secondary-color);
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: var(--transition);
+    padding: 5px;
+    line-height: 1;
+}
+
+.close-btn:hover {
+    color: var(--danger-color);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.review-detail {
+    margin-bottom: 15px;
+}
+
+.review-detail label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--secondary-color);
+}
+
+.review-detail p {
+    margin: 0;
+    padding: 8px 12px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.full-review-content {
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+.modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.confirm-delete-btn {
+    background-color: var(--danger-color);
+    color: var(--white);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.confirm-delete-btn:hover {
+    background-color: var(--danger-dark);
+}
+
+.cancel-btn {
+    background-color: var(--secondary-color);
+    color: var(--white);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.cancel-btn:hover {
+    background-color: var(--secondary-dark);
+}
+
+/* Responsive Design - Adapté pour la sidebar du dashboard */
+@media screen and (max-width: 992px) {
+    .main-content {
+        margin-left: var(--sidebar-width-tablet); /* Correspond à la largeur réduite de la sidebar à 992px */
+    }
+    
+    .review-content {
+        max-width: 200px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .main-content {
+        margin-left: var(--sidebar-width-mobile); /* Correspond à la largeur minimale de la sidebar à 768px */
+        padding: 20px;
+    }
+    
+    .table-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .table-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .search-input {
+        flex: 1;
+        min-width: 150px;
+    }
+    
+    .review-content {
+        max-width: 150px;
+    }
+    
+    .reviews-table th,
+    .reviews-table td {
+        padding: 10px;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .main-content {
+        margin-left: 0; /* Pas de marge en mode mobile quand la sidebar est cachée */
+        padding: 15px;
+    }
+    
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .reviews-table {
+        font-size: 13px;
+    }
+    
+    .action-btn {
+        padding: 5px 8px;
+        font-size: 12px;
+    }
+    
+    .pagination {
+        overflow-x: auto;
+        width: 100%;
+        justify-content: flex-start;
+        padding: 10px 0;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-height: 90vh;
+    }
+    
+    .modal-header h3 {
+        font-size: 16px;
+    }
+}
